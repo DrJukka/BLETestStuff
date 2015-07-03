@@ -101,7 +101,9 @@ public class MainActivity extends ActionBarActivity implements BLEBase.CallBack 
                             UUID.fromString(CharacteristicsUID1)
                             ,BluetoothGattCharacteristic.PROPERTY_READ |BluetoothGattCharacteristic.PROPERTY_WRITE
                             ,BluetoothGattCharacteristic.PERMISSION_READ |BluetoothGattCharacteristic.PERMISSION_WRITE);
-                    firstServiceChar.setValue(69, BluetoothGattCharacteristic.FORMAT_UINT8, 0);
+
+                    String data1 = "Hi";
+                    firstServiceChar.setValue(data1.getBytes());
 
                     BluetoothGattDescriptor descriptor = new BluetoothGattDescriptor(UUID.fromString(DescriptorUID)
                              , BluetoothGattDescriptor.PERMISSION_READ | BluetoothGattDescriptor.PERMISSION_WRITE);

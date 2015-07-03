@@ -62,15 +62,18 @@ public class SearchKitKat {
         @Override
         public void onLeScan(final BluetoothDevice device, final int rssi, final byte[] scanRecord) {
             // your implementation here
-            btAdapter.stopLeScan(leScanCallback);
             that.callBack.Debug("ADAPTER", "onLeScan device: " + device.getName() + ", RSSI: " + rssi);
 
             Map <Integer,String> parseRecord = BLEScanRecordParser.ParseRecord(scanRecord);
-            that.callBack.Debug("ADAPTER", "Service UID = " + BLEScanRecordParser.getServiceUUID(parseRecord));
-
-            if(bluetoothGatt == null) {
-                that.callBack.Debug("ADAPTER", "connectGatt");
-                bluetoothGatt = device.connectGatt(that.context, false, new MyBluetoothGattCallback(that.callBack));
+            String uuidFound = BLEScanRecordParser.getServiceUUID(parseRecord);
+            that.callBack.Debug("ADAPTER", "Service UID = " + uuidFound);
+            if(uuidFound.equalsIgnoreCase(MainActivity.SERVICE_UUID_1)) {
+                btAdapter.stopLeScan(leScanCallback);
+                if (bluetoothGatt == null) {
+                    that.callBack.Debug("ADAPTER", "connectGatt");
+                    bluetoothGatt = device.connectGatt(that.context, false, new MyBluetoothGattCallback(that.callBack));
+                    bluetoothGatt.connect();
+                }
             }
         }
     };

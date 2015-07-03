@@ -83,9 +83,9 @@ public class MyBluetoothGattCallback extends BluetoothGattCallback {
     }
 
     public void onCharacteristicRead(android.bluetooth.BluetoothGatt gatt, android.bluetooth.BluetoothGattCharacteristic characteristic, int status) {
-        that.callBack.Debug("BLE","onCharacteristicRead: " + characteristic.toString() + "(" + characteristic.getUuid()  + ") status: " + BLEBase.getGATTStatus(status));
+        that.callBack.Debug("BLE","onCharacteristicRead: " + characteristic.getValue() + "(" + characteristic.getUuid()  + ") status: " + BLEBase.getGATTStatus(status));
 
-        for (BluetoothGattDescriptor descriptor : characteristic.getDescriptors()) {
+    /*    for (BluetoothGattDescriptor descriptor : characteristic.getDescriptors()) {
             if (descriptor != null) {
                 // lets find our own characteristics
                 if(MainActivity.DescriptorUID.equalsIgnoreCase(descriptor.getUuid().toString())) {
@@ -94,7 +94,7 @@ public class MyBluetoothGattCallback extends BluetoothGattCallback {
                     break;
                 }
             }
-        }
+        }*/
     }
 
     public void onCharacteristicWrite(android.bluetooth.BluetoothGatt gatt, android.bluetooth.BluetoothGattCharacteristic characteristic, int status) {
