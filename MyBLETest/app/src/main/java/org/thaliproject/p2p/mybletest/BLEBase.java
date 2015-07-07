@@ -66,25 +66,19 @@ public class BLEBase {
         }
     }
 
-    public static String getDeviceNameOrAddress(BluetoothDevice device,Context context){
+    public static String getDeviceNameOrAddress(String deviceAddress,Context context) {
         String ret = "";
-        if(device != null){
-            String devAddress = device.getAddress();
-            if(device.getName() != null){
-                ret = device.getName();
-            }else if (devAddress != null){
-                BluetoothManager tmpBluetoothManager = (BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE);
-                if (tmpBluetoothManager != null) {
-                    BluetoothDevice tmpDev = tmpBluetoothManager.getAdapter().getRemoteDevice(devAddress);
-                    if(tmpDev != null && tmpDev.getName() != null){
-                        ret = tmpDev.getName();
-                    }
-                }
 
-                if(ret.length() == 0){
-                    ret = devAddress;
-                }
+        BluetoothManager tmpBluetoothManager = (BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE);
+        if (tmpBluetoothManager != null) {
+            BluetoothDevice tmpDev = tmpBluetoothManager.getAdapter().getRemoteDevice(deviceAddress);
+            if (tmpDev != null && tmpDev.getName() != null) {
+                ret = tmpDev.getName();
             }
+        }
+
+        if (ret.length() == 0) {
+            ret = deviceAddress;
         }
 
         return ret;

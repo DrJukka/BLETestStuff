@@ -194,25 +194,42 @@ public class MainActivity extends ActionBarActivity implements BLEBase.CallBack,
     }
 
     @Override
-    public void onDeviceConnected(BluetoothDevice device, int status) {
-        debug_Text("CONN", BLEBase.getDeviceNameOrAddress(device,this) + " Connected with status: " + BLEBase.getGATTStatus(status));
+    public void onDeviceConnected(String deviceAddress, int status) {
+        debug_Text("CONN", BLEBase.getDeviceNameOrAddress(deviceAddress,this) + " Connected with status: " + BLEBase.getGATTStatus(status));
     }
 
     @Override
-    public void onDeviceDisconnected(BluetoothDevice device, int status) {
-        debug_Text("CONN", BLEBase.getDeviceNameOrAddress(device,this) + " Disconnected with status: " + BLEBase.getGATTStatus(status));
+    public void onDeviceDisconnected(String deviceAddress, int status) {
+        debug_Text("CONN", BLEBase.getDeviceNameOrAddress(deviceAddress,this) + " Disconnected with status: " + BLEBase.getGATTStatus(status));
     }
 
     @Override
-    public void onCharacterRead(BluetoothDevice device, BluetoothGattCharacteristic characteristic) {
-        debug_Text("Character", BLEBase.getDeviceNameOrAddress(device,this) + " Read-Start for " + getCharacterName(characteristic.getUuid().toString()));
+    public void onCharacterRead(String deviceAddress, String uuid) {
+        debug_Text("Character", BLEBase.getDeviceNameOrAddress(deviceAddress,this) + " Read-Start for " + getCharacterName(uuid));
     }
 
     @Override
-    public void onDescriptorRead(BluetoothDevice device, BluetoothGattDescriptor characteristic) {
-        debug_Text("Descriptor", BLEBase.getDeviceNameOrAddress(device,this) + " Read-Start for " + getDescriptorName(characteristic.getUuid().toString()));
+    public void onDescriptorRead(String deviceAddress, String uuid) {
+        debug_Text("Descriptor", BLEBase.getDeviceNameOrAddress(deviceAddress,this) + " Read-Start for " + getDescriptorName(uuid));
     }
 
+    @Override
+    public void onCharacterWrite(String deviceAddress, String uuid, byte[] value) {
+        debug_Text("Character", BLEBase.getDeviceNameOrAddress(deviceAddress,this) + " wrote " + getCharacterName(uuid));
+
+        if(value != null && value.length > 0) {
+            debug_Text("Character", "Data(" + value.length + " bytes): " + new String(value));
+        }
+    }
+
+    @Override
+    public void onDescriptorWrite(String deviceAddress, String uuid, byte[] value) {
+        debug_Text("Descriptor", BLEBase.getDeviceNameOrAddress(deviceAddress,this) + " wrote " + getDescriptorName(uuid));
+
+        if(value != null && value.length > 0) {
+            debug_Text("Descriptor", "Data(" + value.length + " bytes): " + new String(value));
+        }
+    }
 
     String getCharacterName(String UUIID){
 
