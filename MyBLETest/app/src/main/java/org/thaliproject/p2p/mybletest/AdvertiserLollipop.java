@@ -150,18 +150,23 @@ public class AdvertiserLollipop {
             debug_print("ADV-CB", "Call Stop advert");
 
             stopped = true;
-            mBluetoothLeAdvertiser.stopAdvertising(mAdvertiseCallback);;
+            mBluetoothLeAdvertiser.stopAdvertising(mAdvertiseCallback);
             mBluetoothLeAdvertiser = null;
+        }
+
+        if(mBluetoothGattServices != null){
+            if(mBluetoothGattServer != null){
+                for (BluetoothGattService serv : mBluetoothGattServices){
+                    mBluetoothGattServer.removeService(serv);
+                }
+            }
+            mBluetoothGattServices.clear();
         }
 
         if(mBluetoothGattServer != null){
             mBluetoothGattServer.clearServices();
             mBluetoothGattServer.close();
             mBluetoothGattServer = null;
-        }
-
-        if(mBluetoothGattServices != null){
-            mBluetoothGattServices.clear();
         }
 
         if(serviceUuids != null){
