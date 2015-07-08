@@ -132,30 +132,8 @@ public class AdvertiserLollipop {
                     settingsBuilder.setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_HIGH);
                     settingsBuilder.setConnectable(true);
 
-                    mBluetoothLeAdvertiser.startAdvertising(settingsBuilder.build(), dataBuilder.build(), new AdvertiseCallback() {
-
-                        @Override
-                        public void onStartSuccess(AdvertiseSettings settingsInEffec) {
-                            Started(settingsInEffec, null);
-                        }
-
-                        @Override
-                        public void onStartFailure(int result) {
-                            if (result == AdvertiseCallback.ADVERTISE_FAILED_DATA_TOO_LARGE) {
-                                Started(null, "Failed to start advertising as the advertise data to be broadcasted is larger than 31 bytes.");
-                            } else if (result == AdvertiseCallback.ADVERTISE_FAILED_TOO_MANY_ADVERTISERS) {
-                                Started(null, "Failed to start advertising because no advertising instance is available.");
-                            } else if (result == AdvertiseCallback.ADVERTISE_FAILED_ALREADY_STARTED) {
-                                Started(null, "Failed to start advertising as the advertising is already started.");
-                            } else if (result == AdvertiseCallback.ADVERTISE_FAILED_INTERNAL_ERROR) {
-                                Started(null, "Operation failed due to an internal error.");
-                            } else if (result == AdvertiseCallback.ADVERTISE_FAILED_FEATURE_UNSUPPORTED) {
-                                Started(null, "This feature is not supported on this platform.");
-                            } else {
-                                Started(null, "There was unknown error(" + String.format("%02X", result) + ")");
-                            }
-                        }
-                    });
+                    stopped = false;
+                    mBluetoothLeAdvertiser.startAdvertising(settingsBuilder.build(), dataBuilder.build(),mAdvertiseCallback );
                 } else {
                     Started(null, "MultipleAdvertisementSupported is NOT-Supported");
                 }
@@ -170,26 +148,9 @@ public class AdvertiserLollipop {
     public void Stop() {
         if(mBluetoothLeAdvertiser != null) {
             debug_print("ADV-CB", "Call Stop advert");
-            mBluetoothLeAdvertiser.stopAdvertising(new AdvertiseCallback() {
 
-                @Override
-                public void onStartSuccess(AdvertiseSettings settingsInEffec) {
-                    debug_print("ADV-CB", "Stopped OK");
-                    Stopped(null);
-                }
-
-                @Override
-                public void onStartFailure(int result) {
-                    debug_print("ADV-CB", "Stopped with error");
-                    if (result == AdvertiseCallback.ADVERTISE_FAILED_INTERNAL_ERROR) {
-                        Stopped("Operation failed due to an internal error.");
-                    } else if (result == AdvertiseCallback.ADVERTISE_FAILED_FEATURE_UNSUPPORTED) {
-                        Stopped("This feature is not supported on this platform.");
-                    } else {
-                        Stopped("There was unknown error(" + String.format("%02X", result) + ")");
-                    }
-                }
-            });
+            stopped = true;
+            mBluetoothLeAdvertiser.stopAdvertising(mAdvertiseCallback);;
             mBluetoothLeAdvertiser = null;
         }
 
@@ -488,6 +449,47 @@ public class AdvertiserLollipop {
         }
         return ret;
     }
+
+    boolean stopped = false;
+    AdvertiseCallback mAdvertiseCallback = new AdvertiseCallback() {
+
+        @Override
+        public void onStartSuccess(AdvertiseSettings settingsInEffec) {
+            if(stopped) {
+                debug_print("ADV-CB", "Stopped OK");
+                Stopped(null);
+            }else{
+                debug_print("ADV-CB", "Started OK");
+                Started(settingsInEffec, null);
+            }
+        }
+
+        @Override
+        public void onStartFailure(int result) {
+            String errBuffer = "";
+            if (result == AdvertiseCallback.ADVERTISE_FAILED_DATA_TOO_LARGE) {
+                errBuffer = "Failed to start advertising as the advertise data to be broadcasted is larger than 31 bytes.";
+            } else if (result == AdvertiseCallback.ADVERTISE_FAILED_TOO_MANY_ADVERTISERS) {
+                errBuffer = "Failed to start advertising because no advertising instance is available.";
+            } else if (result == AdvertiseCallback.ADVERTISE_FAILED_ALREADY_STARTED) {
+                errBuffer = "Failed to start advertising as the advertising is already started.";
+            } else if (result == AdvertiseCallback.ADVERTISE_FAILED_INTERNAL_ERROR) {
+                errBuffer = "Operation failed due to an internal error.";
+            } else if (result == AdvertiseCallback.ADVERTISE_FAILED_FEATURE_UNSUPPORTED) {
+                errBuffer = "This feature is not supported on this platform.";
+            } else {
+                errBuffer = "There was unknown error(" + String.format("%02X", result) + ")";
+            }
+
+            if(stopped) {
+                debug_print("ADV-CB", "Stopped OK");
+                Stopped(errBuffer);
+            }else{
+                debug_print("ADV-CB", "Started OK");
+                Started(null,errBuffer);
+            }
+        }
+    };
 
     private void debug_print(String who, String what){
         Log.i(who, what);
