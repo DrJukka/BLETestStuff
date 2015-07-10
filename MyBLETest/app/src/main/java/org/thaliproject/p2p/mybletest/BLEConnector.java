@@ -51,10 +51,9 @@ public class BLEConnector {
         btAdapter = btManager.getAdapter();
     }
 
-    public boolean connect(final BluetoothDevice device,BLEConnectCallback callBack) {
+    public boolean connect(final BluetoothDevice device) {
         boolean ret = false;
         if(device != null && bluetoothGatt == null && connectBack != null) {
-            this.connectBack = callBack;
             bluetoothGatt = device.connectGatt(that.context, false, gattCallback);
             ret = true;
         }

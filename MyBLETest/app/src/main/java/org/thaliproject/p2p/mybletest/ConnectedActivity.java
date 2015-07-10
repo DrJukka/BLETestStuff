@@ -288,7 +288,7 @@ public class ConnectedActivity extends Activity implements BLEConnector.BLEConne
         BLEScannerKitKat.DeviceListItem item = ((MyBLEHandlerApp)getApplicationContext()).getSelectedItem();
         if(item != null && item.getDevice() != null){
             setStateBox("Device: " + item.getDevice().getAddress());
-            mBLEConnector.connect(item.getDevice(), this);
+            mBLEConnector.connect(item.getDevice());
         }else{
             ((TextView) findViewById(R.id.connStatus)).setText("Device is NULL: disconnected");
         }
