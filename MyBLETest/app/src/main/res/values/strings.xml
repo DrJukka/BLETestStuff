@@ -1,6 +1,9 @@
 <resources>
     <string name="app_name">MyBLETest</string>
 
+    <string name="conneced">Connect to</string>
+
+
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
 </resources>

@@ -20,23 +20,24 @@ import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Created by juksilve on 20.4.2015.
  */
-public class AdvertiserLollipop {
+public class BLEAdvertiserLollipop {
 
-    AdvertiserLollipop that = this;
+    BLEAdvertiserLollipop that = this;
 
     interface BLEAdvertiserCallback{
-        public void Started(AdvertiseSettings settingsInEffec,String error);
-        public void Stopped(String error);
-        public void onDeviceConnected(String deviceAddress, int status);
-        public void onDeviceDisconnected(String deviceAddress, int status);
-        public void onCharacterRead(String deviceAddress,String uuid);
-        public void onDescriptorRead(String deviceAddress,String uuid);
-        public void onCharacterWrite(String deviceAddress, String uuid,byte[] value);
-        public void onDescriptorWrite(String deviceAddress, String uuid,byte[] value);
+        public void onAdvertisingStarted(AdvertiseSettings settingsInEffec,String error);
+        public void onAdvertisingStopped(String error);
+        public void onRemoteDeviceConnected(String deviceAddress, int status);
+        public void onRemoteDeviceDisconnected(String deviceAddress, int status);
+        public void onRemoteCharacterRead(String deviceAddress,String uuid);
+        public void onRemoteDescriptorRead(String deviceAddress,String uuid);
+        public void onRemoteCharacterWrite(String deviceAddress, String uuid,byte[] value);
+        public void onRemoteDescriptorWrite(String deviceAddress, String uuid,byte[] value);
     }
 
     public class WriteStorage{
@@ -97,7 +98,7 @@ public class AdvertiserLollipop {
     private ArrayList<BluetoothGattService> mBluetoothGattServices;
     private List<ParcelUuid> serviceUuids;
 
-    public AdvertiserLollipop(Context Context, BLEAdvertiserCallback CallBack) {
+    public BLEAdvertiserLollipop(Context Context, BLEAdvertiserCallback CallBack) {
         this.context = Context;
         this.callback = CallBack;
         this.mHandler = new Handler(this.context.getMainLooper());
@@ -186,6 +187,56 @@ public class AdvertiserLollipop {
 
         return ret;
     }
+    public boolean setCharacterValue(UUID uuid, byte[] value) {
+        boolean ret = false;
+        if (mBluetoothGattServices != null) {
+            for (BluetoothGattService tmpServ : mBluetoothGattServices) {
+                outerloop:
+                if (tmpServ != null) {
+                    List<BluetoothGattCharacteristic> CharList = tmpServ.getCharacteristics();
+                    if (CharList != null) {
+                        for (BluetoothGattCharacteristic chara : CharList) {
+                            if (chara != null && chara.getUuid().compareTo(uuid) == 0){
+                                chara.setValue(value);
+                                ret = true;
+                                break outerloop;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return ret;
+    }
+
+    public boolean setDescriptorValue(UUID uuid, byte[] value) {
+        boolean ret = false;
+        if (mBluetoothGattServices != null) {
+            for (BluetoothGattService tmpServ : mBluetoothGattServices) {
+                outerloop:
+                if (tmpServ != null) {
+                    List<BluetoothGattCharacteristic> CharList = tmpServ.getCharacteristics();
+                    if (CharList != null) {
+                        for (BluetoothGattCharacteristic chara : CharList) {
+                            if (chara != null) {
+                                List<BluetoothGattDescriptor> DescList = chara.getDescriptors();
+                                if (DescList != null) {
+                                    for (BluetoothGattDescriptor descr : DescList) {
+                                        if (descr != null && descr.getUuid().compareTo(uuid) == 0) {
+                                            descr.setValue(value);
+                                            ret = true;
+                                            break outerloop;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return ret;
+    }
 
     private void Started(AdvertiseSettings settingsInEffec,String error){
         final AdvertiseSettings settingsInEffecTmp = settingsInEffec;
@@ -195,7 +246,7 @@ public class AdvertiserLollipop {
             @Override
             public void run() {
                 if(callback != null) {
-                    callback.Started(settingsInEffecTmp, errorTmp);
+                    callback.onAdvertisingStarted(settingsInEffecTmp, errorTmp);
                 }
             }
         });
@@ -207,7 +258,7 @@ public class AdvertiserLollipop {
             @Override
             public void run() {
                 if(callback != null) {
-                    callback.Stopped(errorTmp);
+                    callback.onAdvertisingStopped(errorTmp);
                 }
             }
         });
@@ -227,7 +278,7 @@ public class AdvertiserLollipop {
                         @Override
                         public void run() {
                             if (callback != null) {
-                                callback.onDeviceDisconnected(deviceTmp, statusTmp);
+                                callback.onRemoteDeviceDisconnected(deviceTmp, statusTmp);
                             }
                         }
                     });
@@ -237,7 +288,7 @@ public class AdvertiserLollipop {
                         @Override
                         public void run() {
                             if (callback != null) {
-                                callback.onDeviceConnected(deviceTmp, statusTmp);
+                                callback.onRemoteDeviceConnected(deviceTmp, statusTmp);
                             }
                         }
                     });
@@ -260,7 +311,7 @@ public class AdvertiserLollipop {
                     @Override
                     public void run() {
                         if(callback != null) {
-                            callback.onCharacterRead(deviceTmp, characteristicTmp);
+                            callback.onRemoteCharacterRead(deviceTmp, characteristicTmp);
                         }
                     }
                 });
@@ -269,6 +320,7 @@ public class AdvertiserLollipop {
             byte[] dataForResponse = new byte[] {};
             if (mBluetoothGattServices != null) {
                 for (BluetoothGattService tmpServ : mBluetoothGattServices) {
+                    outerloop:
                     if(tmpServ != null){
                         List<BluetoothGattCharacteristic> CharList = tmpServ.getCharacteristics();
                         if(CharList != null){
@@ -278,7 +330,7 @@ public class AdvertiserLollipop {
                                     if(tmpString != null && tmpString.length()>0) {
                                         dataForResponse = tmpString.getBytes();
                                     }
-                                    break;
+                                    break outerloop;
                                 }
                             }
                         }
@@ -294,7 +346,11 @@ public class AdvertiserLollipop {
         public void onCharacteristicWriteRequest(android.bluetooth.BluetoothDevice device, int requestId, android.bluetooth.BluetoothGattCharacteristic characteristic, boolean preparedWrite, boolean responseNeeded, int offset, byte[] value) {
             super.onCharacteristicWriteRequest(device, requestId, characteristic, preparedWrite, responseNeeded, offset, value);
 
-            addWriteItemByteBuffer(device.getAddress(),characteristic.getUuid().toString(),value,true);
+            if(preparedWrite) {
+                addWriteItemByteBuffer(device.getAddress(), characteristic.getUuid().toString(), value, true);
+            }else {
+                onCharacterWrite(device.getAddress(),characteristic.getUuid().toString(),value);
+            }
 
             if (mBluetoothGattServer != null &&responseNeeded) {
                 // need to give the same values we got as an reply, in order to get next possible part.
@@ -313,7 +369,7 @@ public class AdvertiserLollipop {
                     @Override
                     public void run() {
                         if(callback != null) {
-                            callback.onDescriptorRead(deviceTmp, descriptorTmp);
+                            callback.onRemoteDescriptorRead(deviceTmp, descriptorTmp);
                         }
                     }
                 });
@@ -323,6 +379,7 @@ public class AdvertiserLollipop {
 
             if (mBluetoothGattServices != null) {
                 for (BluetoothGattService tmpServ : mBluetoothGattServices) {
+                    outerloop:
                     if(tmpServ != null){
                         List<BluetoothGattCharacteristic> CharList = tmpServ.getCharacteristics();
                         if(CharList != null){
@@ -343,7 +400,7 @@ public class AdvertiserLollipop {
                                                         dataForResponse[i] = tmpString[offset + i];
                                                     }
                                                 }
-                                                break;
+                                                break outerloop;
                                             }
                                         }
                                     }
@@ -362,7 +419,11 @@ public class AdvertiserLollipop {
         public void onDescriptorWriteRequest(android.bluetooth.BluetoothDevice device, int requestId, android.bluetooth.BluetoothGattDescriptor descriptor, boolean preparedWrite, boolean responseNeeded, int offset, byte[] value) {
             super.onDescriptorWriteRequest(device, requestId, descriptor, preparedWrite, responseNeeded, offset, value);
 
-            addWriteItemByteBuffer(device.getAddress(),descriptor.getUuid().toString(),value,false);
+            if(preparedWrite) {
+                addWriteItemByteBuffer(device.getAddress(),descriptor.getUuid().toString(),value,false);
+            }else {
+                onDescriptorWrite(device.getAddress(),descriptor.getUuid().toString(),value);
+            }
 
             if (mBluetoothGattServer != null &&responseNeeded) {
                 // need to give the same values we got as an reply, in order to get next possible part.
@@ -384,7 +445,9 @@ public class AdvertiserLollipop {
 
     private void executeWriteStorages(String deviceAddress, boolean execute){
 
-        for (WriteStorage storage : mWriteList){
+        debug_print("ADV-CB", "executeWriteStorages : " + execute);
+        for(int i=mWriteList.size() - 1; i >= 0;i--){
+            WriteStorage storage  = mWriteList.get(i);
             if(storage != null && storage.getDeviceAddress().equalsIgnoreCase(deviceAddress)){
                 if(execute){//if its not for executing, its then for cancelling it
                     if(storage.isCharacter()){
@@ -394,9 +457,9 @@ public class AdvertiserLollipop {
                     }
                 }
 
+                mWriteList.remove(storage);
                 //we are done with this item now.
                 storage.clearData();
-                mWriteList.remove(storage);
             }
         }
     }
@@ -411,7 +474,7 @@ public class AdvertiserLollipop {
             @Override
             public void run() {
                 if(callback != null) {
-                    callback.onCharacterWrite(deviceTmp,uuidTmp,valueTmp);
+                    callback.onRemoteCharacterWrite(deviceTmp,uuidTmp,valueTmp);
                 }
             }
         });
@@ -426,7 +489,7 @@ public class AdvertiserLollipop {
             @Override
             public void run() {
                 if(callback != null) {
-                    callback.onDescriptorWrite(deviceTmp,uuidTmp,valueTmp);
+                    callback.onRemoteDescriptorWrite(deviceTmp,uuidTmp,valueTmp);
                 }
             }
         });

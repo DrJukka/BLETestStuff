@@ -12,7 +12,6 @@
         android:layout_alignParentRight="true"
         android:layout_alignParentEnd="true"
         android:weightSum="1">
-
         <LinearLayout
             android:orientation="horizontal"
             android:layout_width="fill_parent"
@@ -23,17 +22,17 @@
             android:layout_marginBottom="10dp">
 
             <Button
-                android:id="@+id/button3"
+                android:id="@+id/ConnectBut"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignRight="@+id/textView1"
-                android:text="Start advert" />
-            <Button
-                android:id="@+id/button2"
-                android:layout_width="wrap_content"
+                android:text="Connect" />
+            <TextView
+                android:id="@+id/curState"
+                android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
-                android:layout_alignRight="@+id/textView1"
-                android:text="Start Scan" />
+                android:layout_weight="1.0"
+                android:text="...connecting..."/>
 
         </LinearLayout>
         <LinearLayout
@@ -45,12 +44,20 @@
             android:weightSum="1"
             android:layout_marginBottom="10dp">
             <TextView
-                android:id="@+id/advertStatus"
+                android:id="@+id/connStatus"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1.0"/>
+                android:layout_weight="1.0"
+                android:text="...connecting..."/>
+            <Button
+                android:id="@+id/mtuBut"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignRight="@+id/textView1"
+                android:text="MTU size" />
         </LinearLayout>
         <LinearLayout
+            android:id="@+id/servView"
             android:orientation="horizontal"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
@@ -59,7 +66,7 @@
             android:weightSum="1"
             android:layout_marginBottom="10dp">
             <ListView
-                android:id="@+id/devList"
+                android:id="@+id/servList"
                 android:layout_height="fill_parent"
                 android:layout_width="fill_parent">
             </ListView>

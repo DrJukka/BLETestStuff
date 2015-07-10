@@ -1,5 +1,6 @@
 package org.thaliproject.p2p.mybletest;
 
+import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothManager;
@@ -21,6 +22,20 @@ public class BLEBase {
 
     public static boolean isBLESupported(Context context) {
         return context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE);
+    }
+
+    public static boolean isBLEAdvertisingSupported(Context context) {
+        boolean ret = false;
+        if (context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
+            BluetoothManager tmpMan = (BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE);
+            if (tmpMan != null) {
+                BluetoothAdapter tmpAdapter = tmpMan.getAdapter();
+                if (tmpAdapter != null && tmpAdapter.isMultipleAdvertisementSupported()) {
+                    ret = true;
+                }
+            }
+        }
+        return ret;
     }
 
     public static String getConnectionState(int State) {
