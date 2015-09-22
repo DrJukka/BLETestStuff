@@ -1,5 +1,6 @@
 package com.example.myapplication2.app;
-
+import android.annotation.SuppressLint;
+import android.annotation.TargetApi;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
@@ -20,15 +21,17 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 // https://code.google.com/p/android/issues/detail?id=82463
 
-public class BLEScannerLollipop implements DiscoveryCallback{
+@TargetApi(18)
+@SuppressLint("NewApi")
+public class BLEScannerLollipop {
 
     BLEScannerLollipop that = this;
     private final Context context;
-    private final DiscoveryCallback mDiscoveryCallback;
+    private final PeerDiscoveredCallback mDiscoveryCallback;
     private final BluetoothAdapter mBluetoothAdapter;
     private final CopyOnWriteArrayList<BluetoothDevice> mBLEDeviceList = new CopyOnWriteArrayList<BluetoothDevice>();
     private final Handler mHandler;
-
+    private final String mInstanceString;
     private final BluetoothLeScanner scanner;
 
     private BLEValueReader mBLEValueReader = null;
@@ -43,18 +46,19 @@ public class BLEScannerLollipop implements DiscoveryCallback{
         }
     };
 
-        public BLEScannerLollipop(Context Context, DiscoveryCallback CallBack, BluetoothManager Manager) {
-            this.context = Context;
-            this.mDiscoveryCallback = CallBack;
-            this.mBluetoothAdapter = Manager.getAdapter();
-            this.scanner = this.mBluetoothAdapter.getBluetoothLeScanner();
+    public BLEScannerLollipop(Context Context, PeerDiscoveredCallback CallBack, BluetoothManager Manager,String instanceString) {
+        this.context = Context;
+        this.mDiscoveryCallback = CallBack;
+        this.mBluetoothAdapter = Manager.getAdapter();
+        this.mInstanceString = instanceString;
+        this.scanner = this.mBluetoothAdapter.getBluetoothLeScanner();
 
-            this.mHandler = new Handler(this.context.getMainLooper());
-        }
+        this.mHandler = new Handler(this.context.getMainLooper());
+    }
 
     public void Start() {
         Stop();
-        BLEValueReader tmpValueReader = new BLEValueReader(this.context, this, mBluetoothAdapter);
+        BLEValueReader tmpValueReader = new BLEValueReader(this.context, this.mDiscoveryCallback, mBluetoothAdapter,this.mInstanceString);
         mBLEValueReader = tmpValueReader;
         StartScanning();
     }
@@ -87,13 +91,9 @@ public class BLEScannerLollipop implements DiscoveryCallback{
         }
     }
 
-    @Override
-    public void gotServicesList(List<ServiceItem> list) {
-        Log.i("SCAN-NER", "gotServicesList size : " + list.size());
-
-        that.mDiscoveryCallback.gotServicesList(list);
+    public void reStartScanning() {
+        Log.i("SCAN-NER", "reStartScanning called");
         mBLEDeviceList.clear();
-
         // supposedly we need to stp & re-start in order to be sure we do get the devices again.
         // http://stackoverflow.com/questions/19502853/android-4-3-ble-filtering-behaviour-of-startlescan
         // I did not have the devices mentioned in the list to actually test this, but supposedly starting & stopping should work just fine
@@ -104,22 +104,6 @@ public class BLEScannerLollipop implements DiscoveryCallback{
                 StartScanning();
             }
         });
-    }
-
-    @Override
-    public void foundService(ServiceItem item) {
-        Log.i("SCAN-NER", "foundService : " + item.peerName);
-        that.mDiscoveryCallback.foundService(item);
-    }
-
-    @Override
-    public void StateChanged(com.example.myapplication2.app.DiscoveryCallback.State newState) {
-        that.mDiscoveryCallback.StateChanged(newState);
-    }
-
-    @Override
-    public void debugData(String data) {
-        that.mDiscoveryCallback.debugData(data);
     }
 
     private void foudDevice(ScanResult result) {
@@ -166,13 +150,18 @@ public class BLEScannerLollipop implements DiscoveryCallback{
             return;
         }
 
-        Log.i("SCAN-NER", "AddDevice : " + device.getAddress());
+        //lets ask if we have seen this earlier already
+        ServiceItem foundPeer = that.mDiscoveryCallback.isPeerDiscovered(device);
+        if(foundPeer != null){
+            that.mDiscoveryCallback.PeerDiscovered(foundPeer,true);
+            return;
+        }
 
+        Log.i("SCAN-NER", "AddDevice : " + device.getAddress());
         //Add device will actually start the discovery process if there is no previous discovery on progress
         // if there is not, then we will start discovery process with this device
         mBLEValueReader.AddDevice(device);
     }
-
 
     final private ScanCallback mScanCallback = new ScanCallback(){
         public void onScanResult(int callbackType, ScanResult result) {
@@ -186,8 +175,8 @@ public class BLEScannerLollipop implements DiscoveryCallback{
         }
 
         public void onScanFailed(int errorCode) {
-            debugData("onScanFailed : " + errorCode);
-
+            Log.i("SCAN-NER", "onScanFailed : " + errorCode);
         }
     };
+
 }

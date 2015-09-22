@@ -1,5 +1,7 @@
 package com.example.myapplication2.app;
 
+import android.annotation.SuppressLint;
+import android.annotation.TargetApi;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
@@ -7,6 +9,7 @@ import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.os.Build;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -21,23 +24,34 @@ public class BLEBase {
     // the actual values are delivered through the characteristics
     static public final String SERVICE_UUID_1      = "010500a1-00b0-1000-8000-00805f9b34fb";
     static public final String CharacteristicsUID1 = "46651222-96e0-4aca-a710-8f35f7e702b9";
+    static public final String CharacteristicsUID2 = "46651333-96e0-4aca-a710-8f35f7e702b9";
 
     public static boolean isBLESupported(Context context) {
         return context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE);
     }
 
+    @TargetApi(18)
+    @SuppressLint("NewApi")
     public static boolean isBLEAdvertisingSupported(Context context) {
-        boolean ret = false;
-        if (context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
-            BluetoothManager tmpMan = (BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE);
-            if (tmpMan != null) {
-                BluetoothAdapter tmpAdapter = tmpMan.getAdapter();
-                if (tmpAdapter != null && tmpAdapter.isMultipleAdvertisementSupported()) {
-                    ret = true;
-                }
-            }
+
+        if(Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+            return false;
         }
-        return ret;
+
+        if (!context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)){
+            return false;
+        }
+
+        BluetoothManager tmpMan = (BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE);
+        if (tmpMan == null) {
+            return false;
+        }
+
+        BluetoothAdapter tmpAdapter = tmpMan.getAdapter();
+        if (tmpAdapter == null ) {
+            return false;
+        }
+        return tmpAdapter.isMultipleAdvertisementSupported();
     }
 
     public static String getConnectionStateAsString(int State) {

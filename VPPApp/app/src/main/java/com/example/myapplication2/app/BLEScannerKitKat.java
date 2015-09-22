@@ -18,17 +18,16 @@ import java.util.concurrent.CopyOnWriteArrayList;
 // 40:30 , 1:01:00 - connectable
 //https://www.youtube.com/watch?feature=player_detailpage&v=qx55Sa8UZAQ#t=1712
 
-class BLEScannerKitKat implements DiscoveryCallback {
+class BLEScannerKitKat  {
 
     private final BLEScannerKitKat that = this;
     private final Context context;
-    private final DiscoveryCallback mDiscoveryCallback;
+    private final PeerDiscoveredCallback mDiscoveryCallback;
     private final BluetoothAdapter mBluetoothAdapter;
     private final CopyOnWriteArrayList<BLEDeviceListItem> mBLEDeviceList = new CopyOnWriteArrayList<BLEDeviceListItem>();
     private final Handler mHandler;
-
+    private final String mInstanceString;
     private BLEValueReader mBLEValueReader = null;
-
 
     private final CountDownTimer reTryStartScanningTimer = new CountDownTimer(5000, 1000) {
         public void onTick(long millisUntilFinished) {}
@@ -38,16 +37,17 @@ class BLEScannerKitKat implements DiscoveryCallback {
         }
     };
 
-    public BLEScannerKitKat(Context Context, DiscoveryCallback CallBack,BluetoothManager Manager) {
+    public BLEScannerKitKat(Context Context, PeerDiscoveredCallback CallBack,BluetoothManager Manager,String instanceString) {
         this.context = Context;
         this.mDiscoveryCallback = CallBack;
         this.mBluetoothAdapter = Manager.getAdapter();
+        this.mInstanceString = instanceString;
         this.mHandler = new Handler(this.context.getMainLooper());
     }
 
     public void Start() {
         Stop();
-        BLEValueReader tmpValueReader = new BLEValueReader(this.context,this,mBluetoothAdapter);
+        BLEValueReader tmpValueReader = new BLEValueReader(this.context,this.mDiscoveryCallback,mBluetoothAdapter,this.mInstanceString);
         mBLEValueReader = tmpValueReader;
         StartScanning();
     }
@@ -59,7 +59,7 @@ class BLEScannerKitKat implements DiscoveryCallback {
                 boolean retValue = that.mBluetoothAdapter.startLeScan(that.leScanCallback);
                 Log.i("SCAN-NER", "start now : " + retValue);
                 if(!retValue){
-                    debugData("Scanner failed to start");
+                    that.mDiscoveryCallback.debugData("SCANNER reTry");
                     reTryStartScanningTimer.start();
                 }
             }
@@ -83,11 +83,8 @@ class BLEScannerKitKat implements DiscoveryCallback {
         }
     }
 
-    @Override
-    public void gotServicesList(List<ServiceItem> list) {
-        Log.i("SCAN-NER", "gotServicesList size : " + list.size());
-
-        that.mDiscoveryCallback.gotServicesList(list);
+    public void reStartScanning() {
+        Log.i("SCAN-NER", "reStartScanning now");
         mBLEDeviceList.clear();
 
         // supposedly we need to stp & re-start in order to be sure we do get the devices again.
@@ -100,22 +97,6 @@ class BLEScannerKitKat implements DiscoveryCallback {
                 StartScanning();
             }
         });
-    }
-
-    @Override
-    public void foundService(ServiceItem item) {
-        Log.i("SCAN-NER", "foundService : " + item.peerName);
-        that.mDiscoveryCallback.foundService(item);
-    }
-
-    @Override
-    public void StateChanged(State newState) {
-        that.mDiscoveryCallback.StateChanged(newState);
-    }
-
-    @Override
-    public void debugData(String data) {
-        that.mDiscoveryCallback.debugData(data);
     }
 
     private final BluetoothAdapter.LeScanCallback leScanCallback = new BluetoothAdapter.LeScanCallback() {
@@ -134,11 +115,13 @@ class BLEScannerKitKat implements DiscoveryCallback {
                 }
             }
 
-            //if we have not seen it earlier, we need to parse the record to see what service its having.
-            if (itemTmp == null) {
-                itemTmp = new BLEDeviceListItem(device, scanRecord);
-                mBLEDeviceList.add(itemTmp);
+            //seen earlier, lets return
+            if (itemTmp != null) {
+                return;
             }
+
+            itemTmp = new BLEDeviceListItem(device, scanRecord);
+            mBLEDeviceList.add(itemTmp);
 
             if (!itemTmp.getUUID().equalsIgnoreCase(BLEBase.SERVICE_UUID_1)) {
                 //its not our service, so we are not interested on it anymore.
@@ -147,6 +130,14 @@ class BLEScannerKitKat implements DiscoveryCallback {
                 return;
             }
 
+            //lets ask if we have seen this earlier already
+            ServiceItem foundPeer = that.mDiscoveryCallback.isPeerDiscovered(device);
+            if(foundPeer != null){
+                that.mDiscoveryCallback.PeerDiscovered(foundPeer,true);
+                return;
+            }
+
+            Log.i("SCAN-NER", "AddDevice : " + device.getAddress());
 
             //Add device will actually start the discovery process if there is no previous discovery on progress
             // if there is not, then we will start discovery process with this device

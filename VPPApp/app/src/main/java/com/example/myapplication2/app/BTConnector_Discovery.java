@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All Rights Reserved. Licensed under the MIT License. See license.txt in the project root for further information.
 package com.example.myapplication2.app;
 
+import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
@@ -15,11 +16,12 @@ import android.util.Log;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Created by juksilve on 22.06.2015.
  */
-public class BTConnector_Discovery implements AdvertiserCallback, DiscoveryCallback {
+public class BTConnector_Discovery implements AdvertiserCallback {
 
     private final BTConnector_Discovery that = this;
     private BLEScannerKitKat mSearchKitKat = null;
@@ -28,36 +30,81 @@ public class BTConnector_Discovery implements AdvertiserCallback, DiscoveryCallb
 
     private final Context context;
     private final String mSERVICE_TYPE;
+    private final String mInstanceString;
 
     private final DiscoveryCallback callback;
     private final BluetoothManager mBluetoothManager;
     private final BluetoothGattService mFirstService;
 
+    // list of all devices we have discovered so far, so we can use previous info if we see same peer again
+    private final CopyOnWriteArrayList<ServiceItem> myDevicesDiscoveredList = new CopyOnWriteArrayList<ServiceItem>();
+
+    //currently seen list, that gets cleared everytime we give current list out
+    private final CopyOnWriteArrayList<ServiceItem> myServiceList = new CopyOnWriteArrayList<ServiceItem>();
+
+    // 180 second after we saw last peer, we could determine that we have seen all we have around us
+    // with devices doing advertising, we need to keep this timeout long, since there are such a many errors happening
+    // with devices only doing scanning we could drop this at least to 60 seconds, maybe even smaller
+    private final CountDownTimer peerDiscoveryTimer = new CountDownTimer(60000, 1000) {
+
+        public void onTick(long millisUntilFinished) {}
+
+        public void onFinish() {
+            that.callback.gotServicesList(myServiceList);
+
+            if(myServiceList.size() > 0){
+                peerDiscoveryTimer.start();
+            }
+
+            // as we just told what we see now, we clear the list, so we can have new view on next update
+            myServiceList.clear();
+
+            Log.i("BLEValueReader", "gotServicesList called ");
+
+            // do restart the scanners with clear list
+            BLEScannerKitKat tmpScanner = mSearchKitKat;
+            if(tmpScanner != null){
+                tmpScanner.reStartScanning();
+            }
+
+            BLEScannerLollipop tmpLollipopScan = mBLEScannerLollipop;
+            if(tmpLollipopScan != null){
+                tmpLollipopScan.reStartScanning();
+            }
+        }
+    };
+
     public BTConnector_Discovery(Context Context, DiscoveryCallback Callback, String ServiceType, String instanceLine){
         this.context = Context;
         this.mSERVICE_TYPE = ServiceType;
         this.callback = Callback;
+        this.mInstanceString = instanceLine;
         this.mBluetoothManager = (BluetoothManager) this.context.getSystemService(Context.BLUETOOTH_SERVICE);
         this.mFirstService = new BluetoothGattService(UUID.fromString(BLEBase.SERVICE_UUID_1),BluetoothGattService.SERVICE_TYPE_PRIMARY);
 
         BluetoothGattCharacteristic firstServiceChar = new BluetoothGattCharacteristic(UUID.fromString(BLEBase.CharacteristicsUID1),BluetoothGattCharacteristic.PROPERTY_READ,BluetoothGattCharacteristic.PERMISSION_READ );
         firstServiceChar.setValue(instanceLine.getBytes());
 
+        BluetoothGattCharacteristic secondServiceChar = new BluetoothGattCharacteristic(UUID.fromString(BLEBase.CharacteristicsUID2),BluetoothGattCharacteristic.PROPERTY_WRITE,BluetoothGattCharacteristic.PERMISSION_WRITE );
+
         this.mFirstService.addCharacteristic(firstServiceChar);
+        this.mFirstService.addCharacteristic(secondServiceChar);
     }
 
     public void Start() {
         Log.i("Connector_Discovery", "starting-");
         StartAdvertiser();
         StartScanner();
-        StateChanged(State.DiscoveryFindingPeers);
+        this.callback.StateChanged(DiscoveryCallback.State.DiscoveryFindingPeers);
     }
 
     public void Stop() {
         Log.i("Connector_Discovery", "Stopping");
         StopAdvertiser();
         StopScanner();
-        StateChanged(State.DiscoveryIdle);
+        this.callback.StateChanged(DiscoveryCallback.State.DiscoveryIdle);
+        myDevicesDiscoveredList.clear();
+        myServiceList.clear();
     }
 
     private void StartAdvertiser(){
@@ -85,14 +132,14 @@ public class BTConnector_Discovery implements AdvertiserCallback, DiscoveryCallb
 
         //API is not available before Lollipop
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            debugData("Start Lollipop scanner");
-            BLEScannerLollipop tmpScannerLollipop = new BLEScannerLollipop(that.context, that, that.mBluetoothManager);
+            Log.i("Connector_Discovery", "Start Lollipop scanner");
+            BLEScannerLollipop tmpScannerLollipop = new BLEScannerLollipop(that.context, that, that.mBluetoothManager,this.mInstanceString);
             tmpScannerLollipop.Start();
             mBLEScannerLollipop= tmpScannerLollipop;
 
         }else {
-            debugData("Start kitkat scanner");
-            BLEScannerKitKat tmpScannerKitKat = new BLEScannerKitKat(that.context, that, that.mBluetoothManager);
+            Log.i("Connector_Discovery", "Start kitkat scanner");
+            BLEScannerKitKat tmpScannerKitKat = new BLEScannerKitKat(that.context, that, that.mBluetoothManager,this.mInstanceString);
             tmpScannerKitKat.Start();
             mSearchKitKat = tmpScannerKitKat;
         }
@@ -124,36 +171,79 @@ public class BTConnector_Discovery implements AdvertiserCallback, DiscoveryCallb
         Log.i("Connector_Discovery", "Stopped err : " + error);
     }
 
-    //we are simply forwarding thw calls for DiscoveryCallback to be handled in the ConnectorLib
     @Override
-    public void gotServicesList(List<ServiceItem> list) {
-        that.callback.gotServicesList(list);
-    }
+    public void PeerDiscovered(ServiceItem peer,boolean cachedValue) {
 
-    @Override
-    public void foundService(ServiceItem item) {
-        that.callback.foundService(item);
-    }
+        Log.i("Connector_Discovery", "PeerDiscovered : " + peer.peerName);
 
-    public void StateChanged(State newState) {
+        //lets first tell upstairs that we found one
+        that.callback.foundService(peer);
 
-        Log.i("Connector_Discovery", "StateChanged : " + newState);
-        switch(newState){
-            case DiscoveryIdle:
-                that.callback.StateChanged(State.DiscoveryIdle);
+        // then first add it to the Currently discovered list
+        // which gets fired in timeout, and plugin will get idea of all device we currently see
+        boolean alreadyDiscovered = false;
+        for (ServiceItem item : that.myServiceList) {
+            if (item != null && item.deviceAddress.equalsIgnoreCase(peer.deviceAddress)) {
+                alreadyDiscovered = true;
                 break;
-            case DiscoveryNotInitialized:
-                that.callback.StateChanged(State.DiscoveryNotInitialized);
-                break;
-            case DiscoveryFindingPeers:
-                that.callback.StateChanged(State.DiscoveryFindingPeers);
-                break;
-            case DiscoveryFindingServices:
-                that.callback.StateChanged(State.DiscoveryFindingServices);
-                break;
-            default:
-                throw new RuntimeException("Invalid value for DiscoveryCallback.State = " + newState);
+            }
         }
+        if (alreadyDiscovered) {
+            // we have seen this before
+            return;
+        }
+
+        //lets reset the full-list timeout here
+        peerDiscoveryTimer.cancel();
+        peerDiscoveryTimer.start();
+
+        // we need to save the peer, so we can determine devices that went away with timer.
+        that.myServiceList.add(peer);
+
+        if(cachedValue){
+            // this is already cached, so no need to check
+            return;
+        }
+
+        //lets then also cache all peers we find, so we don't need to poll them again
+        //this saves battery and reduces errors, since we do loads less work
+        boolean alreadyInTheList = false;
+        for (ServiceItem foundOne : that.myDevicesDiscoveredList) {
+            if (foundOne != null && foundOne.deviceAddress.equalsIgnoreCase(peer.deviceAddress)) {
+                alreadyInTheList = true;
+                break;
+            }
+        }
+
+        if (!alreadyInTheList) {
+            //see whether we had it there with other BLE address, i.e. it was re-started
+            for (ServiceItem foundOne : that.myDevicesDiscoveredList) {
+                if (foundOne != null && foundOne.peerAddress.equalsIgnoreCase(peer.peerAddress)) {
+                    that.myDevicesDiscoveredList.remove(foundOne);
+                }
+            }
+            that.myDevicesDiscoveredList.add(peer);
+        }
+    }
+
+    @Override
+    public ServiceItem isPeerDiscovered(final BluetoothDevice device) {
+
+        // its not on currently seen list, thus lets check whether we have seen it earlier
+        for (ServiceItem foundOne : myDevicesDiscoveredList) {
+            if (foundOne != null && foundOne.deviceAddress.equalsIgnoreCase(device.getAddress())) {
+                long ageOfDiscovery = (System.currentTimeMillis() - foundOne.discoveredTime);
+                if (ageOfDiscovery > 86400000){//more than 24 hours old
+                    // this service was discovered over 24 hours ago, so lets go and re-fresh it
+                    myDevicesDiscoveredList.remove(foundOne);
+                    return null;
+                }
+
+                return foundOne;
+            }
+        }
+
+        return null;
     }
 
     @Override
