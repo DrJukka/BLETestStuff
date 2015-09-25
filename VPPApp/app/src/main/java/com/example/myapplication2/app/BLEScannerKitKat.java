@@ -116,12 +116,10 @@ class BLEScannerKitKat  {
             }
 
             //seen earlier, lets return
-            if (itemTmp != null) {
-                return;
+            if (itemTmp == null) {
+                itemTmp = new BLEDeviceListItem(device, scanRecord);
+                mBLEDeviceList.add(itemTmp);
             }
-
-            itemTmp = new BLEDeviceListItem(device, scanRecord);
-            mBLEDeviceList.add(itemTmp);
 
             if (!itemTmp.getUUID().equalsIgnoreCase(BLEBase.SERVICE_UUID_1)) {
                 //its not our service, so we are not interested on it anymore.
@@ -130,18 +128,27 @@ class BLEScannerKitKat  {
                 return;
             }
 
+            // we already have it in the currently discovered list
+            if(that.mDiscoveryCallback.isPeerDiscovered(itemTmp.getDevice().getAddress())){
+                return;
+            }
+
+            // let get our real-bluetooth address, delivered as Service data
+
+
             //lets ask if we have seen this earlier already
-            ServiceItem foundPeer = that.mDiscoveryCallback.isPeerDiscovered(device);
+            ServiceItem foundPeer = that.mDiscoveryCallback.haveWeSeenPeerEarlier(itemTmp.getDevice());
             if(foundPeer != null){
+                // so we have seen it earlier, but if we are all the way here, its not yet in current list of peers we see
                 that.mDiscoveryCallback.PeerDiscovered(foundPeer,true);
                 return;
             }
 
-            Log.i("SCAN-NER", "AddDevice : " + device.getAddress());
+            Log.i("SCAN-NER", "AddDevice : " + itemTmp.getDevice().getAddress() + " BT-Address : " + itemTmp.getBluetoothAddress());
 
             //Add device will actually start the discovery process if there is no previous discovery on progress
             // if there is not, then we will start discovery process with this device
-            mBLEValueReader.AddDevice(device);
+            mBLEValueReader.AddDevice(itemTmp.getDevice(),itemTmp.getBluetoothAddress());// todo implement service data parsing from scan record
         }
     };
 }

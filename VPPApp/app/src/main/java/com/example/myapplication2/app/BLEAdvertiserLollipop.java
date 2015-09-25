@@ -48,7 +48,7 @@ public class BLEAdvertiserLollipop {
         this.mBluetoothManager = btManager;
         this.mBluetoothAdapter = mBluetoothManager.getAdapter();
     }
-    public boolean Start() {
+    public boolean Start(String blueToothAddressString) {
 
         if(mBluetoothManager == null || mBluetoothAdapter == null){
             Started("Bluetooth is NOT-Supported");
@@ -68,6 +68,16 @@ public class BLEAdvertiserLollipop {
         mBluetoothGattServer = mBluetoothManager.openGattServer(this.context, mGattServerCallback);
         mBluetoothLeAdvertiser = mBluetoothAdapter.getBluetoothLeAdvertiser();
 
+        if(mBluetoothGattServer == null) {
+            Started("openGattServer returned null");
+            return false;
+        }
+
+        if(mBluetoothLeAdvertiser == null) {
+            Started("getBluetoothLeAdvertiser returned null");
+            return false;
+        }
+
         for (BluetoothGattService service: mBluetoothGattServices) {
             if (service != null) {
                 mBluetoothGattServer.addService(service);
@@ -79,8 +89,16 @@ public class BLEAdvertiserLollipop {
 
         dataBuilder.setIncludeTxPowerLevel(true);
 
+        String[] splitted = blueToothAddressString.split(":");
+        byte[] sendAddress = new byte[6];        // length == 6 bytes
+        for(int i = 0; i < splitted.length; i++) {
+            sendAddress[i] = Integer.decode("0x" + splitted[i]).byteValue();
+        }
+
+        //the list can actually only have one item, otherwise its making the scan record too big
         for (ParcelUuid uuid : serviceUuids) {
             dataBuilder.addServiceUuid(uuid);
+            dataBuilder.addServiceData(uuid, sendAddress);
         }
 
         settingsBuilder.setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_POWER);
@@ -89,6 +107,10 @@ public class BLEAdvertiserLollipop {
 //        settingsBuilder.setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_BALANCED);
   //      settingsBuilder.setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_HIGH);
         settingsBuilder.setConnectable(true);
+
+        //make sure these are false, so we save some space on scan record
+        dataBuilder.setIncludeDeviceName(false);
+        dataBuilder.setIncludeTxPowerLevel(false);
 
         weAreStoppingNow = false;
         mBluetoothLeAdvertiser.startAdvertising(settingsBuilder.build(), dataBuilder.build(),mAdvertiseCallback );
@@ -256,6 +278,7 @@ public class BLEAdvertiserLollipop {
 
         private void onCharacterWrite(String deviceAddress, String uuid,byte[] value){
 
+            //disabled for debugging reasons
             String jsonString = new String(value);
             try {
                 JSONObject jObject = new JSONObject(jsonString);
@@ -274,10 +297,6 @@ public class BLEAdvertiserLollipop {
                 Log.i("ADV-CB", "Decrypting instance failed , :" + e.toString());
             }
         }
-
-        private int disconCount = 0;
-        private int connCount = 0;
-
     };
 
     private final AdvertiseCallback mAdvertiseCallback = new AdvertiseCallback() {
@@ -324,6 +343,7 @@ public class BLEAdvertiserLollipop {
                 Log.i("ADV-CB", "Stopped Err: " + errBuffer);
                 Stopped(errBuffer);
             }else{
+                callback.debugData("Advertisement failed: " + errBuffer);
                 Log.i("ADV-CB", "Started Err : " + errBuffer);
                 Started(errBuffer);
             }

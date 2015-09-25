@@ -7,6 +7,7 @@ import android.bluetooth.BluetoothDevice;
  */
 interface PeerDiscoveredCallback {
     void PeerDiscovered(ServiceItem peer, boolean cachedValue);
-    ServiceItem isPeerDiscovered(final BluetoothDevice device);
+    boolean isPeerDiscovered(String deviceAddress);
+    ServiceItem haveWeSeenPeerEarlier(final BluetoothDevice device);
     void debugData(String data);
 }

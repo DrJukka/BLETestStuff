@@ -26,6 +26,7 @@ public class MainActivity extends Activity implements DiscoveryCallback {
     protected PowerManager.WakeLock mWakeLock;
 
 
+
     private final MainActivity that = this;
     private String mInstanceString = "";
     static final String JSON_ID_PEERID   = "pi";
@@ -166,9 +167,16 @@ public class MainActivity extends Activity implements DiscoveryCallback {
         logListScreen(textToSet);
     }
 
+    private long lastFoundTimeStamp =0;
     @Override
     public void foundService(ServiceItem item) {
-        logScreen("foundService " + item.peerName);
+
+        long SinceLast = 0;
+        if(lastFoundTimeStamp != 0) {
+            SinceLast = System.currentTimeMillis()  - lastFoundTimeStamp;
+        }
+        logScreen("foundService ("+ SinceLast +  " ms.)" + item.peerName  + ", " + item.deviceAddress);
+        lastFoundTimeStamp = System.currentTimeMillis();
 
         boolean alreadyInList = false;
         for(ServiceItem listItem : mLastSeenList){

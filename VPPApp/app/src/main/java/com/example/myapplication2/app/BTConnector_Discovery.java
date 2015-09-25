@@ -50,14 +50,12 @@ public class BTConnector_Discovery implements AdvertiserCallback {
         public void onTick(long millisUntilFinished) {}
 
         public void onFinish() {
+
             that.callback.gotServicesList(myServiceList);
 
             if(myServiceList.size() > 0){
                 peerDiscoveryTimer.start();
             }
-
-            // as we just told what we see now, we clear the list, so we can have new view on next update
-            myServiceList.clear();
 
             Log.i("BLEValueReader", "gotServicesList called ");
 
@@ -71,6 +69,9 @@ public class BTConnector_Discovery implements AdvertiserCallback {
             if(tmpLollipopScan != null){
                 tmpLollipopScan.reStartScanning();
             }
+
+            // as we just told what we see now, we clear the list, so we can have new view on next update
+            myServiceList.clear();
         }
     };
 
@@ -81,6 +82,7 @@ public class BTConnector_Discovery implements AdvertiserCallback {
         this.mInstanceString = instanceLine;
         this.mBluetoothManager = (BluetoothManager) this.context.getSystemService(Context.BLUETOOTH_SERVICE);
         this.mFirstService = new BluetoothGattService(UUID.fromString(BLEBase.SERVICE_UUID_1),BluetoothGattService.SERVICE_TYPE_PRIMARY);
+
 
         BluetoothGattCharacteristic firstServiceChar = new BluetoothGattCharacteristic(UUID.fromString(BLEBase.CharacteristicsUID1),BluetoothGattCharacteristic.PROPERTY_READ,BluetoothGattCharacteristic.PERMISSION_READ );
         firstServiceChar.setValue(instanceLine.getBytes());
@@ -114,7 +116,7 @@ public class BTConnector_Discovery implements AdvertiserCallback {
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             BLEAdvertiserLollipop tmpAdvertiserLollipop = new BLEAdvertiserLollipop(that.context, that, mBluetoothManager);
             tmpAdvertiserLollipop.addService(mFirstService);
-            tmpAdvertiserLollipop.Start();
+            tmpAdvertiserLollipop.Start(mBluetoothManager.getAdapter().getAddress());
             mBLEAdvertiserLollipop = tmpAdvertiserLollipop;
         }
     }
@@ -181,25 +183,17 @@ public class BTConnector_Discovery implements AdvertiserCallback {
 
         // then first add it to the Currently discovered list
         // which gets fired in timeout, and plugin will get idea of all device we currently see
-        boolean alreadyDiscovered = false;
-        for (ServiceItem item : that.myServiceList) {
-            if (item != null && item.deviceAddress.equalsIgnoreCase(peer.deviceAddress)) {
-                alreadyDiscovered = true;
-                break;
-            }
-        }
-        if (alreadyDiscovered) {
+        if (isPeerDiscovered(peer.deviceAddress)) {
             // we have seen this before
             return;
         }
+        that.myServiceList.add(peer);
 
         //lets reset the full-list timeout here
         peerDiscoveryTimer.cancel();
         peerDiscoveryTimer.start();
 
         // we need to save the peer, so we can determine devices that went away with timer.
-        that.myServiceList.add(peer);
-
         if(cachedValue){
             // this is already cached, so no need to check
             return;
@@ -227,9 +221,20 @@ public class BTConnector_Discovery implements AdvertiserCallback {
     }
 
     @Override
-    public ServiceItem isPeerDiscovered(final BluetoothDevice device) {
+    public boolean isPeerDiscovered(String deviceAddress) {
 
-        // its not on currently seen list, thus lets check whether we have seen it earlier
+        for (ServiceItem item : that.myServiceList) {
+            if (item != null && item.deviceAddress.equalsIgnoreCase(deviceAddress)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    @Override
+    public ServiceItem haveWeSeenPeerEarlier(final BluetoothDevice device) {
+
         for (ServiceItem foundOne : myDevicesDiscoveredList) {
             if (foundOne != null && foundOne.deviceAddress.equalsIgnoreCase(device.getAddress())) {
                 long ageOfDiscovery = (System.currentTimeMillis() - foundOne.discoveredTime);

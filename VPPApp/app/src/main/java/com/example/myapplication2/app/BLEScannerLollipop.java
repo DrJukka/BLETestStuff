@@ -11,8 +11,7 @@ import android.os.Handler;
 import android.os.ParcelUuid;
 import android.util.Log;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
@@ -67,6 +66,7 @@ public class BLEScannerLollipop {
         mHandler.post(new Runnable() {
             @Override
             public void run() {
+                Log.i("SCAN-NER", "Start scanner now");
                 ScanSettings settings = new ScanSettings.Builder()
                         .setScanMode(ScanSettings.SCAN_MODE_BALANCED)
                         .build();
@@ -115,7 +115,7 @@ public class BLEScannerLollipop {
         BluetoothDevice device = result.getDevice();
         List<ParcelUuid> uuids = result.getScanRecord().getServiceUuids();
 
-        Log.i("SCAN-NER", "foudDevice : " + device.getAddress());
+
 
         if (device == null || uuids == null || mBLEValueReader == null) {
             return;
@@ -131,10 +131,9 @@ public class BLEScannerLollipop {
         }
 
         //seen earlier, lets return
-        if (itemTmp != null) {
-            return;
+        if (itemTmp == null) {
+            mBLEDeviceList.add(device);
         }
-        mBLEDeviceList.add(device);
 
         boolean isOurService = false;
         for (ParcelUuid UID : uuids) {
@@ -149,18 +148,48 @@ public class BLEScannerLollipop {
         if (!isOurService) {
             return;
         }
+        Log.i("SCAN-NER", "foudDevice with ourService: " + device.getAddress());
+
+        // we already have it in the currently discovered list
+        if(that.mDiscoveryCallback.isPeerDiscovered(device.getAddress())){
+            return;
+        }
+
+        // the UID does not always match
+        // for example I was getting 000000a1-0000-1000-8000-00805f9b34fb for 010500a1-00b0-1000-8000-00805f9b34fb
+
+        String peerBluetoothAddress = "";
+
+        Map<ParcelUuid, byte[]> srvData = result.getScanRecord().getServiceData();
+        if(srvData != null && srvData.size() > 0){
+            for (ParcelUuid key : srvData.keySet()) {
+                byte[] srvBuffer = srvData.get(key);
+                // we are expecting Buetooth address, thus the length should be 6
+                if (srvBuffer != null && srvBuffer.length == 6) {
+                    StringBuilder bluetoothAddress = new StringBuilder(srvBuffer.length * 3);
+                    bluetoothAddress.append(String.format("%02X", srvBuffer[0]));
+                    for (int i = 1; i < srvBuffer.length; i++) {
+                        bluetoothAddress.append(String.format(":%02X", srvBuffer[i]));
+                    }
+
+                    peerBluetoothAddress = bluetoothAddress.toString();
+                    break;
+                }
+            }
+        }
 
         //lets ask if we have seen this earlier already
-        ServiceItem foundPeer = that.mDiscoveryCallback.isPeerDiscovered(device);
+        ServiceItem foundPeer = that.mDiscoveryCallback.haveWeSeenPeerEarlier(device);
         if(foundPeer != null){
+            // so we have seen it earlier, but if we are all the way here, its not yet in current list of peers we see
             that.mDiscoveryCallback.PeerDiscovered(foundPeer,true);
             return;
         }
 
-        Log.i("SCAN-NER", "AddDevice : " + device.getAddress());
+        Log.i("SCAN-NER", "AddDevice : " + device.getAddress() + ", BT-Address: " + peerBluetoothAddress);
         //Add device will actually start the discovery process if there is no previous discovery on progress
         // if there is not, then we will start discovery process with this device
-        mBLEValueReader.AddDevice(device);
+        mBLEValueReader.AddDevice(device,peerBluetoothAddress);
     }
 
     final private ScanCallback mScanCallback = new ScanCallback(){
@@ -175,8 +204,9 @@ public class BLEScannerLollipop {
         }
 
         public void onScanFailed(int errorCode) {
+            that.mDiscoveryCallback.debugData("onScanFailed : " + errorCode);
             Log.i("SCAN-NER", "onScanFailed : " + errorCode);
+            reStartScanning();
         }
     };
-
 }
