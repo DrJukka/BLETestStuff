@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:orientation="vertical"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent">
+
+
+    <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentEnd="true"
+            android:weightSum="1"
+            android:layout_marginBottom="10dp">
+
+        <Button
+                android:id="@+id/advertToggle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignRight="@+id/textView1"
+                android:text="Start/Stop Advertising" />
+
+        <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="12sp"
+                android:textColor="#ff000000"
+                android:text="ID1:"/>
+
+        <EditText
+                android:id="@+id/id1box"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_alignLeft="@+id/button"
+                android:layout_below="@+id/textView1"
+                android:layout_marginTop="61dp"
+                android:ems="10"
+                android:inputType="text"
+                android:text="abcdef12-3456-7890-abcd-ef1234567890bb"/>
+        <TextView
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:textSize="12sp"
+                android:textColor="#ff000000"
+                android:text="ID2:"/>
+
+        <EditText
+                android:id="@+id/id2box"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_alignLeft="@+id/button"
+                android:layout_below="@+id/textView1"
+                android:layout_marginTop="61dp"
+                android:ems="10"
+                android:inputType=""
+                android:text="8876"/>
+
+        <TextView
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:textSize="12sp"
+                android:textColor="#ff000000"
+                android:text="ID3:"/>
+
+        <EditText
+                android:id="@+id/id3box"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_alignLeft="@+id/button"
+                android:layout_below="@+id/textView1"
+                android:layout_marginTop="61dp"
+                android:ems="10"
+                android:inputType="text"
+                android:text="1123"/>
+
+    </LinearLayout>
+
+</LinearLayout>

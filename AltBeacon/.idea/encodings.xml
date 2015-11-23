@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="Encoding">
+    <file url="file://$PROJECT_DIR$/app/src/main/java/com/drjukka/altbeacon/AltBeacon.java" charset="windows-1252" />
+    <file url="file://$PROJECT_DIR$/app/src/main/java/com/drjukka/altbeacon/AltBeaconFactory.java" charset="windows-1252" />
+    <file url="file://$PROJECT_DIR$/app/src/main/java/com/drjukka/altbeacon/BeaconAdvertiseView.java" charset="windows-1252" />
+    <file url="file://$PROJECT_DIR$/app/src/main/java/com/drjukka/altbeacon/BeaconAdvertiser.java" charset="windows-1252" />
+    <file url="file://$PROJECT_DIR$/app/src/main/java/com/drjukka/altbeacon/BeaconAdvertiserCallback.java" charset="windows-1252" />
+    <file url="file://$PROJECT_DIR$/app/src/main/java/com/drjukka/altbeacon/BeaconScanner.java" charset="windows-1252" />
+    <file url="file://$PROJECT_DIR$/app/src/main/java/com/drjukka/altbeacon/BeaconScannerCallback.java" charset="windows-1252" />
+    <file url="file://$PROJECT_DIR$/app/src/main/java/com/drjukka/altbeacon/BeaconScannerView.java" charset="windows-1252" />
+    <file url="file://$PROJECT_DIR$/app/src/main/java/com/drjukka/altbeacon/MainListAdapter.java" charset="windows-1252" />
+    <file url="file://$PROJECT_DIR$/app/src/main/res/layout/advertise_tab.xml" charset="windows-1252" />
+    <file url="file://$PROJECT_DIR$/app/src/main/res/layout/listbox_layout.xml" charset="windows-1252" />
+    <file url="file://$PROJECT_DIR$/app/src/main/res/layout/scanner_tab.xml" charset="windows-1252" />
+    <file url="file://$PROJECT_DIR$/app/src/main/res/layout/tabactivity_main.xml" charset="windows-1252" />
+    <file url="PROJECT" charset="UTF-8" />
+  </component>
+</project>
