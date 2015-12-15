@@ -133,18 +133,18 @@ public class BTConnector_Discovery implements AdvertiserCallback {
         StopScanner();
 
         //API is not available before Lollipop
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+     /*   if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             Log.i("Connector_Discovery", "Start Lollipop scanner");
             BLEScannerLollipop tmpScannerLollipop = new BLEScannerLollipop(that.context, that, that.mBluetoothManager,this.mInstanceString);
             tmpScannerLollipop.Start();
             mBLEScannerLollipop= tmpScannerLollipop;
 
         }else {
-            Log.i("Connector_Discovery", "Start kitkat scanner");
+    */        Log.i("Connector_Discovery", "Start kitkat scanner");
             BLEScannerKitKat tmpScannerKitKat = new BLEScannerKitKat(that.context, that, that.mBluetoothManager,this.mInstanceString);
             tmpScannerKitKat.Start();
             mSearchKitKat = tmpScannerKitKat;
-        }
+      //  }
 
     }
 

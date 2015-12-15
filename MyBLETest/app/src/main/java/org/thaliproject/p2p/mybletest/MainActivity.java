@@ -126,8 +126,16 @@ public class MainActivity extends ActionBarActivity{
                 debug_Text("LISTBOX", "pos :" + itemPosition + " values: " + itemValue);
 
                 List<BLEScannerKitKat.DeviceListItem> list = ((MyBLEHandlerApp) getApplicationContext()).getScanList();
+
+                debug_Text("LISTBOX", "Size :" + list.size());
+
+
                 if (list != null && list.size() > itemPosition) {
-                    if (list.get(itemPosition).getDevice() != null && list.get(itemPosition).getDevice().getAddress().equalsIgnoreCase(itemValue)) {
+
+                    debug_Text("LISTBOX", "Size :" + list.get(itemPosition).getDevice().toString());
+
+                    if (list.get(itemPosition).getDevice() != null){// && list.get(itemPosition).getDevice().getAddress().equalsIgnoreCase(itemValue)) {
+
                         ((MyBLEHandlerApp) getApplicationContext()).setSelectedItem(list.get(itemPosition));
                         Intent intent = new Intent(getBaseContext(), ConnectedActivity.class);
                         startActivity(intent);

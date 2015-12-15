@@ -17,6 +17,7 @@ import android.util.Log;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by juksilve on 20.4.2015.
@@ -88,6 +89,7 @@ public class BLEScannerKitKat {
         public void onLeScan(final BluetoothDevice device, final int rssi, final byte[] scanRecord) {
 
             if(device != null && scanRecord != null) {
+
                 boolean notFound = true;
                 for (DeviceListItem item : devlist) {
                     if (item != null && item.getDevice() != null) {
@@ -100,8 +102,13 @@ public class BLEScannerKitKat {
                 }
 
                 if(notFound){
-                    debug_print("SCAN","added new device : " + device.getAddress());
+                    debug_print("SCANNN","added new device : " + BLEBase.getDeviceNameOrAddress(device.getAddress(), that.context) + ", address: " + device.getAddress());
                     devlist.add(new DeviceListItem(device,rssi,scanRecord));
+
+                    Map <Integer,String>  arseRecord = BLEBase.ParseRecord(scanRecord);
+                    for (Integer key: arseRecord.keySet()) {
+                        debug_print("SCANNN","key : " + key + ", value : " + arseRecord.get(key));
+                    }
                 }
 
                 that.mHandler.post(new Runnable() {
